@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Poker Odds Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Poker Odds Calculator</h1>
+      <p>Estimate your Texas Hold'em win odds against up to five opponents.</p>
+    </header>
+
+    <main class="app-container">
+      <section class="card-inputs card-inputs--player">
+        <h2>Your Hand</h2>
+        <div class="card-select-group" id="player-cards"></div>
+        <div
+          class="card-preview"
+          id="player-preview"
+          aria-live="polite"
+          aria-label="Selected player cards"
+        ></div>
+
+        <div class="form-row">
+          <label for="opponent-count">Opponents</label>
+          <input
+            id="opponent-count"
+            type="number"
+            min="1"
+            max="5"
+            value="1"
+            aria-describedby="opponent-help"
+          />
+          <small id="opponent-help">Simulate between 1 and 5 opponents.</small>
+        </div>
+      </section>
+
+      <section class="card-inputs card-inputs--community">
+        <h2>Community Cards</h2>
+        <div class="card-select-group" id="community-cards"></div>
+        <div
+          class="card-preview"
+          id="community-preview"
+          aria-live="polite"
+          aria-label="Selected community cards"
+        ></div>
+        <p class="helper-text">
+          Add as many board cards as you know. Leave blank to simulate the rest.
+        </p>
+      </section>
+
+      <section class="controls">
+        <div class="form-row slider-row">
+          <label for="simulation-count">Simulation Runs</label>
+          <input
+            id="simulation-count"
+            type="range"
+            min="1000"
+            max="20000"
+            step="1000"
+            value="5000"
+          />
+          <output id="simulation-output" for="simulation-count">5,000</output>
+        </div>
+
+        <button id="calculate-button" class="primary-button">Calculate Odds</button>
+        <button id="reset-button" class="secondary-button">Reset</button>
+      </section>
+
+      <section class="results" aria-live="polite">
+        <h2>Results</h2>
+        <div class="results-grid">
+          <div class="result-card">
+            <span class="result-label">Win</span>
+            <span class="result-value" id="win-percentage">0%</span>
+          </div>
+          <div class="result-card">
+            <span class="result-label">Tie</span>
+            <span class="result-value" id="tie-percentage">0%</span>
+          </div>
+          <div class="result-card">
+            <span class="result-label">Lose</span>
+            <span class="result-value" id="loss-percentage">0%</span>
+          </div>
+        </div>
+        <p class="hand-summary" id="hand-summary">
+          Select your cards to see them displayed here and learn your current best hand.
+        </p>
+        <p class="results-meta" id="results-meta">
+          Provide your cards and press "Calculate" to run a Monte Carlo simulation.
+        </p>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>
+        This calculator uses Monte Carlo simulation to approximate odds. For the most
+        accurate results, increase the number of simulation runs.
+      </p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
