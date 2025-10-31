@@ -8,7 +8,7 @@ mobile screens with a modern, touch-friendly layout.
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | Main application markup with layout containers for card inputs, previews, and results. |
+| `index.html` | Main application markup with layout containers for the interactive table, card inputs, previews, and results. |
 | `styles.css` | Responsive styling for desktop and mobile layouts, including the card grid and results panels. |
 | `script.js` | Card selection logic, Monte Carlo odds simulation, hand evaluation, and UI updates. |
 
@@ -43,9 +43,11 @@ git push -u origin main
 
 - 🎯 Select your two hole cards and up to five known community cards.
 - 🃏 Live card previews render your chosen hole and board cards with suit-aware visuals.
+- ♠️ Interactive poker table view lets you tap card slots to launch a full-deck picker.
 - 👥 Simulate games against one to five opponents.
 - 🔁 Adjustable simulation runs (1,000–20,000) for balancing speed and accuracy.
-- 📊 Instant win/tie/loss breakdown with contextual status messaging.
+- ⚡ Automatic win/tie/loss updates whenever you change cards, opponent count, or simulation runs.
+- 📊 Contextual status messaging that explains each batch of simulations.
 - 🧠 Real-time description of your current best made hand based on the cards you've revealed.
 - 📱 Responsive design that adapts seamlessly to phones, tablets, and desktops, including a widescreen layout that surfaces controls beside live results.
 

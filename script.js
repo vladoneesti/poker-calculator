@@ -53,17 +53,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsMeta = document.getElementById('results-meta');
   const opponentInput = document.getElementById('opponent-count');
   const handSummary = document.getElementById('hand-summary');
+  const tableSlots = Array.from(document.querySelectorAll('.table-card-slot'));
+  const cardModal = document.getElementById('card-modal');
+  const cardChoiceGrid = document.getElementById('card-choice-grid');
+  const cardModalTitle = document.getElementById('card-modal-title');
+  const cardModalSubtitle = document.getElementById('card-modal-subtitle');
+  const cardClearButton = document.getElementById('card-clear-button');
+  const modalCloseButtons = cardModal ? cardModal.querySelectorAll('[data-modal-close]') : [];
+  const DEFAULT_STATUS_MESSAGE =
+    'Select your cards to automatically estimate the Monte Carlo odds.';
+  const WAITING_FOR_HOLE_MESSAGE = 'Choose both hole cards to unlock real-time odds.';
+
+  let isCalculating = false;
+  let autoSimulationHandle = null;
+  let activeSlotId = null;
+  let lastFocusedElement = null;
 
   createSelectInputs(playerContainer, 2, 'Player Card');
   createSelectInputs(communityContainer, 5, 'Board Card');
 
   populateSelectOptions();
   attachSelectListeners();
+  buildCardChoiceGrid();
+  attachTableHandlers();
+  updatePreviews();
+  enforceUniqueSelections();
+  clearResults();
+  setStatus(DEFAULT_STATUS_MESSAGE, false);
   updatePreviews();
   simulationOutput.textContent = Number(simulationSlider.value).toLocaleString();
 
   simulationSlider.addEventListener('input', () => {
     simulationOutput.textContent = Number(simulationSlider.value).toLocaleString();
+    scheduleAutoSimulation();
+  });
+
+  calculateButton.addEventListener('click', () => {
+    runSimulation(false);
+  });
+
+  opponentInput.addEventListener('input', () => {
+    scheduleAutoSimulation();
   });
 
   calculateButton.addEventListener('click', async () => {
@@ -120,12 +150,29 @@ document.addEventListener('DOMContentLoaded', () => {
     [...playerContainer.querySelectorAll('select'), ...communityContainer.querySelectorAll('select')].forEach(
       (select) => {
         select.selectedIndex = 0;
+        applySelectColor(select);
       }
     );
 
     opponentInput.value = '1';
     simulationSlider.value = '5000';
     simulationOutput.textContent = '5,000';
+    if (autoSimulationHandle) {
+      clearTimeout(autoSimulationHandle);
+      autoSimulationHandle = null;
+    }
+    clearResults();
+    enforceUniqueSelections();
+    setStatus(DEFAULT_STATUS_MESSAGE, false);
+    updatePreviews();
+    closeCardModal();
+  });
+
+  function clearResults() {
+    winDisplay.textContent = '0%';
+    tieDisplay.textContent = '0%';
+    lossDisplay.textContent = '0%';
+  }
     winDisplay.textContent = '0%';
     tieDisplay.textContent = '0%';
     lossDisplay.textContent = '0%';
@@ -146,6 +193,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function attachSelectListeners() {
     const selects = document.querySelectorAll('select');
     selects.forEach((select) => {
+      select.addEventListener('change', (event) => {
+        const { value } = event.target;
+        if (value && isCardSelectedElsewhere(value, event.target)) {
+          event.target.value = '';
+          setStatus('That card is already selected. Choose a different card.', true);
+        }
+
+        applySelectColor(event.target);
+        enforceUniqueSelections();
+        updatePreviews();
+        scheduleAutoSimulation();
+      });
+
+      applySelectColor(select);
       select.addEventListener('change', updatePreviews);
     });
   }
@@ -154,6 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreviewGroup(playerContainer, playerPreview);
     updatePreviewGroup(communityContainer, communityPreview);
     updateHandSummary();
+    updateTableCards();
+    if (isModalOpen()) {
+      refreshCardChoices();
+    }
   }
 
   function updatePreviewGroup(container, preview) {
@@ -164,6 +229,153 @@ document.addEventListener('DOMContentLoaded', () => {
       const label = select.dataset.label || `Card ${index + 1}`;
       preview.appendChild(createCardElement(card, label));
     });
+  }
+
+  function attachTableHandlers() {
+    tableSlots.forEach((slot) => {
+      slot.addEventListener('click', () => {
+        openCardModal(slot.dataset.cardSlot);
+      });
+    });
+
+    modalCloseButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        closeCardModal();
+      });
+    });
+
+    if (cardClearButton) {
+      cardClearButton.addEventListener('click', () => {
+        if (!activeSlotId) return;
+        const select = getSelectForSlot(activeSlotId);
+        if (!select) return;
+        select.value = '';
+        applySelectColor(select);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        closeCardModal();
+      });
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isModalOpen()) {
+        event.preventDefault();
+        closeCardModal();
+      }
+    });
+
+    if (cardModal) {
+      cardModal.addEventListener('click', (event) => {
+        if (event.target === cardModal) {
+          closeCardModal();
+        }
+      });
+    }
+  }
+
+  function buildCardChoiceGrid() {
+    if (!cardChoiceGrid) return;
+    cardChoiceGrid.innerHTML = '';
+
+    FULL_DECK.forEach((card) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'card-choice';
+      button.dataset.cardCode = card.code;
+      const label = `${card.label}`;
+      button.setAttribute('aria-label', label);
+      button.appendChild(createCardElement(card, card.label));
+      button.addEventListener('click', () => {
+        if (!activeSlotId) return;
+        const select = getSelectForSlot(activeSlotId);
+        if (!select) return;
+        select.value = card.code;
+        applySelectColor(select);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        closeCardModal();
+      });
+      cardChoiceGrid.appendChild(button);
+    });
+  }
+
+  function updateTableCards() {
+    tableSlots.forEach((slot) => {
+      const select = getSelectForSlot(slot.dataset.cardSlot);
+      const label = select?.dataset.label || 'Card';
+      const card = select ? cardFromCode(select.value) : null;
+      slot.innerHTML = '';
+      const cardEl = createCardElement(card, label);
+      slot.appendChild(cardEl);
+      slot.setAttribute(
+        'aria-label',
+        card ? `${label}: ${describeCard(card)}` : `${label}: choose a card`
+      );
+    });
+  }
+
+  function refreshCardChoices() {
+    if (!cardChoiceGrid || !activeSlotId) return;
+    const select = getSelectForSlot(activeSlotId);
+    const currentValue = select?.value || '';
+
+    cardChoiceGrid.querySelectorAll('.card-choice').forEach((button) => {
+      const { cardCode } = button.dataset;
+      const isCurrent = cardCode === currentValue;
+      button.disabled = !isCurrent && isCardSelectedElsewhere(cardCode, select || null);
+      button.classList.toggle('selected', isCurrent);
+    });
+
+    if (cardClearButton) {
+      cardClearButton.disabled = !currentValue;
+    }
+  }
+
+  function openCardModal(slotId) {
+    const select = getSelectForSlot(slotId);
+    if (!cardModal || !select) return;
+    activeSlotId = slotId;
+    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cardModal.classList.add('is-open');
+    cardModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    if (cardModalTitle) {
+      cardModalTitle.textContent = `Choose ${select.dataset.label}`;
+    }
+    if (cardModalSubtitle) {
+      cardModalSubtitle.textContent = 'Tap a card below to assign it to this slot.';
+    }
+    refreshCardChoices();
+    const focusTarget =
+      cardChoiceGrid?.querySelector('.card-choice:not([disabled])') || cardClearButton || null;
+    if (focusTarget instanceof HTMLElement) {
+      focusTarget.focus();
+    }
+  }
+
+  function closeCardModal() {
+    if (!cardModal) return;
+    cardModal.classList.remove('is-open');
+    cardModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    activeSlotId = null;
+    if (lastFocusedElement && document.body.contains(lastFocusedElement)) {
+      lastFocusedElement.focus();
+    }
+    lastFocusedElement = null;
+  }
+
+  function isModalOpen() {
+    return cardModal?.classList.contains('is-open');
+  }
+
+  function getSelectForSlot(slotId) {
+    if (!slotId) return null;
+    return document.querySelector(`select[data-slot='${slotId}']`);
+  }
+
+  function describeCard(card) {
+    const rank = rankMap[card.rank]?.name || card.rank;
+    const suit = suitMap[card.suit]?.name || card.suit;
+    return `${rank} of ${suit}`;
   }
 
   function updateHandSummary() {
@@ -188,6 +400,90 @@ document.addEventListener('DOMContentLoaded', () => {
       } to see the full-board potential.`;
     } else {
       handSummary.textContent = `Current best with known cards: ${description}.`;
+    }
+  }
+  function scheduleAutoSimulation() {
+    if (autoSimulationHandle) {
+      clearTimeout(autoSimulationHandle);
+    }
+    autoSimulationHandle = setTimeout(() => {
+      autoSimulationHandle = null;
+      attemptAutoSimulation();
+    }, 250);
+  }
+
+  async function attemptAutoSimulation() {
+    const playerCards = collectCards(playerContainer);
+    const communityCards = collectCards(communityContainer);
+    const allSelected = [...playerCards, ...communityCards];
+
+    if (playerCards.length < 2) {
+      clearResults();
+      setStatus(WAITING_FOR_HOLE_MESSAGE, false);
+      return;
+    }
+
+    if (hasDuplicates(allSelected)) {
+      setStatus('Duplicate cards detected. Each card can only appear once.', true);
+      return;
+    }
+
+    await runSimulation(true);
+  }
+
+  async function runSimulation(autoTriggered) {
+    if (isCalculating) return;
+
+    const playerCards = collectCards(playerContainer);
+    if (playerCards.length < 2) {
+      if (!autoTriggered) {
+        setStatus('Please select both of your hole cards before calculating.', true);
+      }
+      return;
+    }
+
+    const communityCards = collectCards(communityContainer);
+    const allSelected = [...playerCards, ...communityCards];
+
+    if (hasDuplicates(allSelected)) {
+      setStatus('Duplicate cards detected. Each card can only appear once.', true);
+      return;
+    }
+
+    const opponents = clamp(parseInt(opponentInput.value, 10) || 1, 1, 5);
+    opponentInput.value = opponents.toString();
+
+    const iterations = parseInt(simulationSlider.value, 10);
+
+    isCalculating = true;
+    toggleLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    try {
+      const { winRate, tieRate, lossRate } = simulateOdds(
+        playerCards,
+        communityCards,
+        opponents,
+        iterations
+      );
+
+      winDisplay.textContent = formatPercent(winRate);
+      tieDisplay.textContent = formatPercent(tieRate);
+      lossDisplay.textContent = formatPercent(lossRate);
+
+      setStatus(
+        `Simulated ${iterations.toLocaleString()} hands against ${opponents} opponent${
+          opponents > 1 ? 's' : ''
+        }.`,
+        false
+      );
+      updateHandSummary();
+    } catch (error) {
+      console.error(error);
+      setStatus('Something went wrong during the simulation. Please try again.', true);
+    } finally {
+      isCalculating = false;
+      toggleLoading(false);
     }
   }
 });
@@ -215,12 +511,33 @@ function createSelectInputs(container, count, labelPrefix) {
 function populateSelectOptions() {
   const selects = document.querySelectorAll('select');
   selects.forEach((select) => {
+    const placeholder = new Option('Select card', '');
+    placeholder.style.color = 'var(--text-muted)';
+    select.appendChild(placeholder);
+    FULL_DECK.forEach((card) => {
+      const option = new Option(card.label, card.code);
+      const isRedSuit = card.suit === 'H' || card.suit === 'D';
+      option.dataset.suit = card.suit;
+      option.style.color = isRedSuit ? 'var(--card-red)' : 'var(--card-black)';
     select.appendChild(new Option('Select card', ''));
     FULL_DECK.forEach((card) => {
       const option = new Option(card.label, card.code);
       select.appendChild(option);
     });
   });
+}
+
+function applySelectColor(select) {
+  const selectedOption = select.options[select.selectedIndex];
+
+  if (!selectedOption || !select.value) {
+    select.style.color = 'var(--text-muted)';
+    return;
+  }
+
+  const suit = selectedOption.dataset?.suit;
+  const isRedSuit = suit === 'H' || suit === 'D';
+  select.style.color = isRedSuit ? 'var(--card-red)' : 'var(--card-black)';
 }
 
 function collectCards(container) {
@@ -248,6 +565,39 @@ function hasDuplicates(cards) {
     seen.add(card.code);
     return false;
   });
+}
+
+function enforceUniqueSelections() {
+  const selects = Array.from(document.querySelectorAll('select'));
+  const selectedValues = new Map();
+
+  selects.forEach((select) => {
+    if (select.value) {
+      selectedValues.set(select.value, (selectedValues.get(select.value) || 0) + 1);
+    }
+  });
+
+  selects.forEach((select) => {
+    Array.from(select.options).forEach((option) => {
+      if (!option.value) {
+        option.disabled = false;
+        return;
+      }
+
+      if (option.value === select.value) {
+        option.disabled = false;
+        return;
+      }
+
+      option.disabled = selectedValues.has(option.value);
+    });
+  });
+}
+
+function isCardSelectedElsewhere(value, currentSelect) {
+  return Array.from(document.querySelectorAll('select')).some(
+    (select) => select !== currentSelect && select.value === value
+  );
 }
 
 function clamp(value, min, max) {

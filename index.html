@@ -19,6 +19,54 @@
     </header>
 
     <main class="app-container">
+      <section class="poker-table" aria-label="Interactive poker table">
+        <div class="table-intro">
+          <h2>Virtual Table</h2>
+          <p>Select a seat to choose cards using the interactive picker.</p>
+        </div>
+        <div class="table-felt">
+          <div class="table-row table-row--board" role="group" aria-label="Community cards">
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="community-cards-1"
+            ></button>
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="community-cards-2"
+            ></button>
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="community-cards-3"
+            ></button>
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="community-cards-4"
+            ></button>
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="community-cards-5"
+            ></button>
+          </div>
+          <div class="table-row table-row--player" role="group" aria-label="Your hand">
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="player-cards-1"
+            ></button>
+            <button
+              type="button"
+              class="table-card-slot"
+              data-card-slot="player-cards-2"
+            ></button>
+          </div>
+        </div>
+      </section>
+
       <section class="card-inputs card-inputs--player">
         <h2>Your Hand</h2>
         <div class="card-select-group" id="player-cards"></div>
@@ -95,6 +143,8 @@
           Select your cards to see them displayed here and learn your current best hand.
         </p>
         <p class="results-meta" id="results-meta">
+          Select your cards to automatically run a Monte Carlo simulation. You can also
+          press "Calculate" to refresh on demand.
           Provide your cards and press "Calculate" to run a Monte Carlo simulation.
         </p>
       </section>
@@ -106,6 +156,24 @@
         accurate results, increase the number of simulation runs.
       </p>
     </footer>
+
+    <div class="card-modal" id="card-modal" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="card-modal__backdrop" data-modal-close></div>
+      <div class="card-modal__dialog" role="document">
+        <header class="card-modal__header">
+          <h3 id="card-modal-title">Choose a card</h3>
+          <p id="card-modal-subtitle">Select an available card for this position.</p>
+          <button type="button" class="card-modal__close" data-modal-close aria-label="Close picker">
+            &times;
+          </button>
+        </header>
+        <div class="card-modal__grid" id="card-choice-grid"></div>
+        <div class="card-modal__actions">
+          <button type="button" class="secondary-button" id="card-clear-button">Clear card</button>
+          <button type="button" class="secondary-button" data-modal-close>Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>
