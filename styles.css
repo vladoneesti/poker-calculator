@@ -197,6 +197,7 @@ body {
 .card-visual.card-red .card-rank,
 .card-visual.card-red .card-suit {
   color: var(--card-red);
+  color: #f87171;
 }
 
 .card-empty {
