@@ -614,6 +614,12 @@ function createCardElement(card, label) {
 
   if (!card) {
     cardEl.classList.add('card-empty');
+    cardEl.innerHTML = `
+      <div class="card-back" aria-hidden="true">
+        <div class="card-back-pattern"></div>
+      </div>
+      <span class="card-slot-label">${label}</span>
+    `;
     cardEl.innerHTML = `<span class="card-slot-label">${label}</span>`;
     cardEl.innerHTML = `<span class="card-slot">${label}</span>`;
     return cardEl;
