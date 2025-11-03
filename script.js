@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const communityContainer = document.getElementById('community-cards');
   const playerPreview = document.getElementById('player-preview');
   const communityPreview = document.getElementById('community-preview');
-  const calculateButton = document.getElementById('calculate-button');
+
   const resetButton = document.getElementById('reset-button');
   const simulationSlider = document.getElementById('simulation-count');
   const simulationOutput = document.getElementById('simulation-output');
@@ -53,29 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsMeta = document.getElementById('results-meta');
   const opponentInput = document.getElementById('opponent-count');
   const handSummary = document.getElementById('hand-summary');
-  const tableSlots = Array.from(document.querySelectorAll('.table-card-slot'));
-  const cardModal = document.getElementById('card-modal');
-  const cardChoiceGrid = document.getElementById('card-choice-grid');
-  const cardModalTitle = document.getElementById('card-modal-title');
-  const cardModalSubtitle = document.getElementById('card-modal-subtitle');
-  const cardClearButton = document.getElementById('card-clear-button');
-  const modalCloseButtons = cardModal ? cardModal.querySelectorAll('[data-modal-close]') : [];
+
   const DEFAULT_STATUS_MESSAGE =
     'Select your cards to automatically estimate the Monte Carlo odds.';
   const WAITING_FOR_HOLE_MESSAGE = 'Choose both hole cards to unlock real-time odds.';
 
   let isCalculating = false;
   let autoSimulationHandle = null;
-  let activeSlotId = null;
-  let lastFocusedElement = null;
+
 
   createSelectInputs(playerContainer, 2, 'Player Card');
   createSelectInputs(communityContainer, 5, 'Board Card');
 
   populateSelectOptions();
   attachSelectListeners();
-  buildCardChoiceGrid();
-  attachTableHandlers();
+
   updatePreviews();
   enforceUniqueSelections();
   clearResults();
@@ -88,63 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleAutoSimulation();
   });
 
-  calculateButton.addEventListener('click', () => {
-    runSimulation(false);
-  });
+
 
   opponentInput.addEventListener('input', () => {
     scheduleAutoSimulation();
   });
 
-  calculateButton.addEventListener('click', async () => {
-    const playerCards = collectCards(playerContainer);
-    if (playerCards.length < 2) {
-      setStatus('Please select both of your hole cards before calculating.', true);
-      return;
-    }
 
-    const communityCards = collectCards(communityContainer);
-    const allSelected = [...playerCards, ...communityCards];
-
-    if (hasDuplicates(allSelected)) {
-      setStatus('Duplicate cards detected. Each card can only appear once.', true);
-      return;
-    }
-
-    const opponents = clamp(parseInt(opponentInput.value, 10) || 1, 1, 5);
-    opponentInput.value = opponents.toString();
-
-    const iterations = parseInt(simulationSlider.value, 10);
-
-    toggleLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    try {
-      const { winRate, tieRate, lossRate } = simulateOdds(
-        playerCards,
-        communityCards,
-        opponents,
-        iterations
-      );
-
-      winDisplay.textContent = formatPercent(winRate);
-      tieDisplay.textContent = formatPercent(tieRate);
-      lossDisplay.textContent = formatPercent(lossRate);
-
-      setStatus(
-        `Simulated ${iterations.toLocaleString()} hands against ${opponents} opponent${
-          opponents > 1 ? 's' : ''
-        }.`,
-        false
-      );
-      updateHandSummary();
-    } catch (error) {
-      console.error(error);
-      setStatus('Something went wrong during the simulation. Please try again.', true);
-    } finally {
-      toggleLoading(false);
-    }
-  });
 
   resetButton.addEventListener('click', () => {
     [...playerContainer.querySelectorAll('select'), ...communityContainer.querySelectorAll('select')].forEach(
@@ -173,16 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
     tieDisplay.textContent = '0%';
     lossDisplay.textContent = '0%';
   }
-    winDisplay.textContent = '0%';
-    tieDisplay.textContent = '0%';
-    lossDisplay.textContent = '0%';
-    setStatus('Provide your cards and press "Calculate" to run a Monte Carlo simulation.', false);
-    updatePreviews();
-  });
 
   function toggleLoading(isLoading) {
-    calculateButton.disabled = isLoading;
-    calculateButton.textContent = isLoading ? 'Calculating…' : 'Calculate Odds';
+    // Auto-calculation - no button to disable
   }
 
   function setStatus(message, isError) {
@@ -215,10 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreviewGroup(playerContainer, playerPreview);
     updatePreviewGroup(communityContainer, communityPreview);
     updateHandSummary();
-    updateTableCards();
-    if (isModalOpen()) {
-      refreshCardChoices();
-    }
+
   }
 
   function updatePreviewGroup(container, preview) {
@@ -231,146 +163,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function attachTableHandlers() {
-    tableSlots.forEach((slot) => {
-      slot.addEventListener('click', () => {
-        openCardModal(slot.dataset.cardSlot);
-      });
-    });
 
-    modalCloseButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        closeCardModal();
-      });
-    });
 
-    if (cardClearButton) {
-      cardClearButton.addEventListener('click', () => {
-        if (!activeSlotId) return;
-        const select = getSelectForSlot(activeSlotId);
-        if (!select) return;
-        select.value = '';
-        applySelectColor(select);
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-        closeCardModal();
-      });
-    }
 
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && isModalOpen()) {
-        event.preventDefault();
-        closeCardModal();
-      }
-    });
 
-    if (cardModal) {
-      cardModal.addEventListener('click', (event) => {
-        if (event.target === cardModal) {
-          closeCardModal();
-        }
-      });
-    }
-  }
 
-  function buildCardChoiceGrid() {
-    if (!cardChoiceGrid) return;
-    cardChoiceGrid.innerHTML = '';
 
-    FULL_DECK.forEach((card) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'card-choice';
-      button.dataset.cardCode = card.code;
-      const label = `${card.label}`;
-      button.setAttribute('aria-label', label);
-      button.appendChild(createCardElement(card, card.label));
-      button.addEventListener('click', () => {
-        if (!activeSlotId) return;
-        const select = getSelectForSlot(activeSlotId);
-        if (!select) return;
-        select.value = card.code;
-        applySelectColor(select);
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-        closeCardModal();
-      });
-      cardChoiceGrid.appendChild(button);
-    });
-  }
 
-  function updateTableCards() {
-    tableSlots.forEach((slot) => {
-      const select = getSelectForSlot(slot.dataset.cardSlot);
-      const label = select?.dataset.label || 'Card';
-      const card = select ? cardFromCode(select.value) : null;
-      slot.innerHTML = '';
-      const cardEl = createCardElement(card, label);
-      slot.appendChild(cardEl);
-      slot.setAttribute(
-        'aria-label',
-        card ? `${label}: ${describeCard(card)}` : `${label}: choose a card`
-      );
-    });
-  }
 
-  function refreshCardChoices() {
-    if (!cardChoiceGrid || !activeSlotId) return;
-    const select = getSelectForSlot(activeSlotId);
-    const currentValue = select?.value || '';
 
-    cardChoiceGrid.querySelectorAll('.card-choice').forEach((button) => {
-      const { cardCode } = button.dataset;
-      const isCurrent = cardCode === currentValue;
-      button.disabled = !isCurrent && isCardSelectedElsewhere(cardCode, select || null);
-      button.classList.toggle('selected', isCurrent);
-    });
 
-    if (cardClearButton) {
-      cardClearButton.disabled = !currentValue;
-    }
-  }
 
-  function openCardModal(slotId) {
-    const select = getSelectForSlot(slotId);
-    if (!cardModal || !select) return;
-    activeSlotId = slotId;
-    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    cardModal.classList.add('is-open');
-    cardModal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('modal-open');
-    if (cardModalTitle) {
-      cardModalTitle.textContent = `Choose ${select.dataset.label}`;
-    }
-    if (cardModalSubtitle) {
-      cardModalSubtitle.textContent = 'Tap a card below to assign it to this slot.';
-    }
-    refreshCardChoices();
-    const focusTarget =
-      cardChoiceGrid?.querySelector('.card-choice:not([disabled])') || cardClearButton || null;
-    if (focusTarget instanceof HTMLElement) {
-      focusTarget.focus();
-    }
-  }
 
-  function closeCardModal() {
-    if (!cardModal) return;
-    cardModal.classList.remove('is-open');
-    cardModal.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('modal-open');
-    activeSlotId = null;
-    if (lastFocusedElement && document.body.contains(lastFocusedElement)) {
-      lastFocusedElement.focus();
-    }
-    lastFocusedElement = null;
-  }
 
-  function isModalOpen() {
-    return cardModal?.classList.contains('is-open');
-  }
 
-  function getSelectForSlot(slotId) {
-    if (!slotId) return null;
-    return document.querySelector(`select[data-slot='${slotId}']`);
-  }
+
 
   function describeCard(card) {
     const rank = rankMap[card.rank]?.name || card.rank;
@@ -384,6 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (playerCards.length < 2) {
       handSummary.textContent = 'Select both hole cards to begin calculating odds.';
+      updateCombinationsTable(null);
+      hideHandAnalysis();
       return;
     }
 
@@ -401,6 +210,150 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       handSummary.textContent = `Current best with known cards: ${description}.`;
     }
+
+    updateCombinationsTable(score.category);
+    updateHandAnalysis(playerCards, communityCards, score);
+  }
+
+  function updateHandAnalysis(playerCards, communityCards, currentScore) {
+    const analysisSection = document.getElementById('hand-analysis-inline');
+    const currentHandName = document.getElementById('current-hand-name');
+    const currentHandStrength = document.getElementById('current-hand-strength');
+    const improvementList = document.getElementById('improvement-list');
+    const strengthBar = document.getElementById('strength-bar');
+    const strengthText = document.getElementById('strength-text');
+
+    if (playerCards.length < 2) {
+      hideHandAnalysis();
+      return;
+    }
+
+    analysisSection.style.display = 'block';
+
+    // Update current hand info
+    const handName = getHandName(currentScore.category);
+    currentHandName.textContent = handName;
+    
+    const handStrength = getHandStrength(currentScore.category);
+    currentHandStrength.textContent = `Rank ${10 - currentScore.category} of 10`;
+
+    // Update strength meter
+    const strengthPercent = ((currentScore.category + 1) / 9) * 100;
+    strengthBar.style.width = `${strengthPercent}%`;
+    strengthText.textContent = `${strengthPercent.toFixed(0)}% strength`;
+
+    // Calculate improvement odds if not a complete hand
+    if (playerCards.length + communityCards.length < 7) {
+      const improvements = calculateImprovementOdds(playerCards, communityCards, currentScore);
+      updateImprovementList(improvements);
+    } else {
+      improvementList.innerHTML = '<p class="helper-text">Final hand - no more cards to come</p>';
+    }
+  }
+
+  function hideHandAnalysis() {
+    const analysisSection = document.getElementById('hand-analysis-inline');
+    analysisSection.style.display = 'none';
+  }
+
+  function getHandName(category) {
+    const handNames = {
+      8: 'Straight Flush',
+      7: 'Four of a Kind',
+      6: 'Full House',
+      5: 'Flush',
+      4: 'Straight',
+      3: 'Three of a Kind',
+      2: 'Two Pair',
+      1: 'One Pair',
+      0: 'High Card'
+    };
+    return handNames[category] || 'Unknown';
+  }
+
+  function getHandStrength(category) {
+    const strengths = {
+      8: 'Excellent',
+      7: 'Very Strong',
+      6: 'Strong',
+      5: 'Good',
+      4: 'Good',
+      3: 'Moderate',
+      2: 'Weak',
+      1: 'Very Weak',
+      0: 'Poor'
+    };
+    return strengths[category] || 'Unknown';
+  }
+
+  function calculateImprovementOdds(playerCards, communityCards, currentScore) {
+    const knownCards = [...playerCards, ...communityCards];
+    const remainingCards = FULL_DECK.filter(card => 
+      !knownCards.some(known => known.code === card.code)
+    );
+    
+    const cardsToSee = Math.min(2, 7 - knownCards.length);
+    const improvements = [];
+
+    // Sample a subset of possible outcomes for performance
+    const sampleSize = Math.min(1000, remainingCards.length * (remainingCards.length - 1) / 2);
+    let betterHands = 0;
+    let totalSampled = 0;
+
+    for (let i = 0; i < sampleSize && i < remainingCards.length; i++) {
+      for (let j = i + 1; j < remainingCards.length && totalSampled < sampleSize; j++) {
+        const testCards = [...knownCards, remainingCards[i]];
+        if (cardsToSee > 1) {
+          testCards.push(remainingCards[j]);
+        }
+        
+        const testScore = evaluateHand(testCards);
+        if (testScore.category > currentScore.category) {
+          betterHands++;
+        }
+        totalSampled++;
+      }
+    }
+
+    const improvementChance = totalSampled > 0 ? (betterHands / totalSampled) * 100 : 0;
+    
+    if (improvementChance > 0) {
+      improvements.push({
+        name: 'Any Better Hand',
+        odds: `${improvementChance.toFixed(1)}%`
+      });
+    }
+
+    return improvements;
+  }
+
+  function updateImprovementList(improvements) {
+    const improvementList = document.getElementById('improvement-list');
+    
+    if (improvements.length === 0) {
+      improvementList.innerHTML = '<p class="helper-text">Low chance of improvement</p>';
+      return;
+    }
+
+    improvementList.innerHTML = improvements.map(improvement => `
+      <div class="improvement-item">
+        <span class="improvement-name">${improvement.name}</span>
+        <span class="improvement-odds">${improvement.odds}</span>
+      </div>
+    `).join('');
+  }
+
+  function updateCombinationsTable(currentHandCategory) {
+    const combinationRows = document.querySelectorAll('.combination-row:not(.combination-header)');
+    
+    combinationRows.forEach(row => {
+      row.classList.remove('current-hand');
+      const handCategory = parseInt(row.dataset.handCategory);
+      
+      if (currentHandCategory !== null && handCategory === currentHandCategory) {
+        row.classList.add('current-hand');
+      }
+    });
   }
   function scheduleAutoSimulation() {
     if (autoSimulationHandle) {
@@ -514,14 +467,12 @@ function populateSelectOptions() {
     const placeholder = new Option('Select card', '');
     placeholder.style.color = 'var(--text-muted)';
     select.appendChild(placeholder);
+    
     FULL_DECK.forEach((card) => {
       const option = new Option(card.label, card.code);
       const isRedSuit = card.suit === 'H' || card.suit === 'D';
       option.dataset.suit = card.suit;
-      option.style.color = isRedSuit ? 'var(--card-red)' : 'var(--card-black)';
-    select.appendChild(new Option('Select card', ''));
-    FULL_DECK.forEach((card) => {
-      const option = new Option(card.label, card.code);
+      option.style.color = isRedSuit ? 'var(--card-red)' : 'var(--select-card-black)';
       select.appendChild(option);
     });
   });
@@ -537,7 +488,7 @@ function applySelectColor(select) {
 
   const suit = selectedOption.dataset?.suit;
   const isRedSuit = suit === 'H' || suit === 'D';
-  select.style.color = isRedSuit ? 'var(--card-red)' : 'var(--card-black)';
+  select.style.color = isRedSuit ? 'var(--card-red)' : 'var(--select-card-black)';
 }
 
 function collectCards(container) {
@@ -614,22 +565,20 @@ function createCardElement(card, label) {
 
   if (!card) {
     cardEl.classList.add('card-empty');
-    cardEl.innerHTML = `
-      <div class="card-back" aria-hidden="true">
-        <div class="card-back-pattern"></div>
-      </div>
-      <span class="card-slot-label">${label}</span>
-    `;
     cardEl.innerHTML = `<span class="card-slot-label">${label}</span>`;
-    cardEl.innerHTML = `<span class="card-slot">${label}</span>`;
     return cardEl;
   }
 
   const suitInfo = suitMap[card.suit];
   const isRedSuit = card.suit === 'H' || card.suit === 'D';
+  
+  // Apply consistent red/black color styling
   if (isRedSuit) {
     cardEl.classList.add('card-red');
+  } else {
+    cardEl.classList.add('card-black');
   }
+  
   cardEl.innerHTML = `
     <div class="card-corner card-corner--top">
       <span class="card-rank">${card.rank}</span>
@@ -642,10 +591,6 @@ function createCardElement(card, label) {
       <span class="card-rank">${card.rank}</span>
       <span class="card-suit">${suitInfo.symbol}</span>
     </div>
-  cardEl.classList.toggle('card-red', card.suit === 'H' || card.suit === 'D');
-  cardEl.innerHTML = `
-    <span class="card-rank">${card.rank}</span>
-    <span class="card-suit">${suitInfo.symbol}</span>
   `;
 
   return cardEl;
