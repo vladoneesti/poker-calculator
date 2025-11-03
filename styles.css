@@ -15,6 +15,9 @@
   --shadow: rgba(15, 23, 42, 0.4);
   --card-surface: linear-gradient(145deg, #ffffff, #e2e8f0);
   --card-outline: rgba(15, 23, 42, 0.16);
+  --card-black: #f8fafc;
+  --border: rgba(148, 163, 184, 0.3);
+  --shadow: rgba(15, 23, 42, 0.4);
 }
 
 * {
@@ -123,6 +126,13 @@ body {
 .table-card-slot .card-visual {
   width: clamp(78px, 6vw, 96px);
   height: clamp(110px, 7.5vw, 134px);
+  width: clamp(76px, 6vw, 92px);
+  height: clamp(108px, 7.5vw, 128px);
+}
+
+.table-card-slot .card-visual.card-empty {
+  background: rgba(15, 23, 42, 0.55);
+  border-style: dashed;
 }
 
 .card-inputs,
@@ -261,11 +271,55 @@ body {
 
 .card-rank {
   font-size: 1.05rem;
+  width: 68px;
+  height: 94px;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(17, 25, 40, 0.9));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 18px var(--shadow);
+  font-weight: 600;
+  color: var(--text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-visual:not(.card-empty):hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 26px var(--shadow);
+}
+
+.card-visual.card-red .card-rank,
+.card-visual.card-red .card-suit {
+  color: var(--card-red);
+  color: #f87171;
+}
+
+.card-empty {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  color: var(--text-muted);
+}
+
+.card-slot {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.card-rank {
+  font-size: 1.8rem;
   line-height: 1;
 }
 
 .card-suit {
   font-size: 1.1rem;
+  font-size: 1.35rem;
   line-height: 1;
 }
 
