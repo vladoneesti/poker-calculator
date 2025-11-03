@@ -44,6 +44,7 @@ git push -u origin main
 - 🎯 Select your two hole cards and up to five known community cards.
 - 🃏 Live card previews render your chosen hole and board cards with suit-aware visuals.
 - ♠️ Interactive poker table view lets you tap card slots to launch a full-deck picker.
+- 🪄 Full-sized playing card artwork on the virtual table mirrors the rank and suit for instant recognition.
 - 👥 Simulate games against one to five opponents.
 - 🔁 Adjustable simulation runs (1,000–20,000) for balancing speed and accuracy.
 - ⚡ Automatic win/tie/loss updates whenever you change cards, opponent count, or simulation runs.

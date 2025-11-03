@@ -614,11 +614,28 @@ function createCardElement(card, label) {
 
   if (!card) {
     cardEl.classList.add('card-empty');
+    cardEl.innerHTML = `<span class="card-slot-label">${label}</span>`;
     cardEl.innerHTML = `<span class="card-slot">${label}</span>`;
     return cardEl;
   }
 
   const suitInfo = suitMap[card.suit];
+  const isRedSuit = card.suit === 'H' || card.suit === 'D';
+  if (isRedSuit) {
+    cardEl.classList.add('card-red');
+  }
+  cardEl.innerHTML = `
+    <div class="card-corner card-corner--top">
+      <span class="card-rank">${card.rank}</span>
+      <span class="card-suit">${suitInfo.symbol}</span>
+    </div>
+    <div class="card-center" aria-hidden="true">
+      <span class="card-suit card-suit--large">${suitInfo.symbol}</span>
+    </div>
+    <div class="card-corner card-corner--bottom">
+      <span class="card-rank">${card.rank}</span>
+      <span class="card-suit">${suitInfo.symbol}</span>
+    </div>
   cardEl.classList.toggle('card-red', card.suit === 'H' || card.suit === 'D');
   cardEl.innerHTML = `
     <span class="card-rank">${card.rank}</span>

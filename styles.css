@@ -10,6 +10,11 @@
   --text: #f8fafc;
   --text-muted: #cbd5f5;
   --card-red: #f87171;
+  --card-black: #1f2937;
+  --border: rgba(148, 163, 184, 0.3);
+  --shadow: rgba(15, 23, 42, 0.4);
+  --card-surface: linear-gradient(145deg, #ffffff, #e2e8f0);
+  --card-outline: rgba(15, 23, 42, 0.16);
   --card-black: #f8fafc;
   --border: rgba(148, 163, 184, 0.3);
   --shadow: rgba(15, 23, 42, 0.4);
@@ -119,6 +124,8 @@ body {
 }
 
 .table-card-slot .card-visual {
+  width: clamp(78px, 6vw, 96px);
+  height: clamp(110px, 7.5vw, 134px);
   width: clamp(76px, 6vw, 92px);
   height: clamp(108px, 7.5vw, 128px);
 }
@@ -173,6 +180,97 @@ body {
 }
 
 .card-visual {
+  width: 74px;
+  height: 104px;
+  border-radius: 1rem;
+  border: 2px solid var(--card-outline);
+  background: var(--card-surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.55rem 0.65rem;
+  color: var(--card-black);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: 0.75rem;
+  pointer-events: none;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.card-visual:not(.card-empty):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.card-visual.card-red {
+  color: var(--card-red);
+}
+
+.card-visual .card-rank,
+.card-visual .card-suit {
+  color: currentColor;
+}
+
+.card-corner {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.card-corner--top {
+  align-items: flex-start;
+}
+
+.card-corner--bottom {
+  align-items: flex-end;
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.card-suit--large {
+  font-size: 2.6rem;
+}
+
+.card-visual.card-empty {
+  justify-content: center;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.2);
+  border: 2px dashed rgba(148, 163, 184, 0.4);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.card-visual.card-empty::after {
+  display: none;
+}
+
+.card-slot-label {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.card-rank {
+  font-size: 1.05rem;
   width: 68px;
   height: 94px;
   border-radius: 0.9rem;
@@ -220,6 +318,7 @@ body {
 }
 
 .card-suit {
+  font-size: 1.1rem;
   font-size: 1.35rem;
   line-height: 1;
 }
