@@ -19,53 +19,6 @@
     </header>
 
     <main class="app-container">
-      <section class="poker-table" aria-label="Interactive poker table">
-        <div class="table-intro">
-          <h2>Virtual Table</h2>
-          <p>Select a seat to choose cards using the interactive picker.</p>
-        </div>
-        <div class="table-felt">
-          <div class="table-row table-row--board" role="group" aria-label="Community cards">
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="community-cards-1"
-            ></button>
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="community-cards-2"
-            ></button>
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="community-cards-3"
-            ></button>
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="community-cards-4"
-            ></button>
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="community-cards-5"
-            ></button>
-          </div>
-          <div class="table-row table-row--player" role="group" aria-label="Your hand">
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="player-cards-1"
-            ></button>
-            <button
-              type="button"
-              class="table-card-slot"
-              data-card-slot="player-cards-2"
-            ></button>
-          </div>
-        </div>
-      </section>
 
       <section class="card-inputs card-inputs--player">
         <h2>Your Hand</h2>
@@ -119,12 +72,11 @@
           <output id="simulation-output" for="simulation-count">5,000</output>
         </div>
 
-        <button id="calculate-button" class="primary-button">Calculate Odds</button>
-        <button id="reset-button" class="secondary-button">Reset</button>
+        <button id="reset-button" class="primary-button">Reset All</button>
       </section>
 
       <section class="results" aria-live="polite">
-        <h2>Results</h2>
+        <h2>Results & Analysis</h2>
         <div class="results-grid">
           <div class="result-card">
             <span class="result-label">Win</span>
@@ -139,15 +91,112 @@
             <span class="result-value" id="loss-percentage">0%</span>
           </div>
         </div>
+        
+        <div class="hand-analysis-inline" id="hand-analysis-inline" style="display: none;">
+          <div class="analysis-grid-inline">
+            <div class="analysis-card-inline">
+              <h3>Current Hand</h3>
+              <p class="current-hand-name" id="current-hand-name">-</p>
+              <p class="current-hand-strength" id="current-hand-strength">-</p>
+            </div>
+            <div class="analysis-card-inline">
+              <h3>Hand Strength</h3>
+              <div class="strength-meter">
+                <div class="strength-bar" id="strength-bar"></div>
+                <p class="strength-text" id="strength-text">-</p>
+              </div>
+            </div>
+            <div class="analysis-card-inline">
+              <h3>Improvement Odds</h3>
+              <div class="improvement-list" id="improvement-list">
+                <p class="helper-text">Select your cards to see improvement probabilities</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <p class="hand-summary" id="hand-summary">
           Select your cards to see them displayed here and learn your current best hand.
         </p>
         <p class="results-meta" id="results-meta">
-          Select your cards to automatically run a Monte Carlo simulation. You can also
-          press "Calculate" to refresh on demand.
-          Provide your cards and press "Calculate" to run a Monte Carlo simulation.
+          Select your cards to automatically run a Monte Carlo simulation.
         </p>
       </section>
+
+      <section class="hand-combinations">
+        <h2>Poker Hand Rankings</h2>
+        <p class="helper-text">Probability of getting each hand in a 5-card deal</p>
+        <div class="combinations-table">
+          <div class="combination-row combination-header">
+            <span class="combination-rank">Rank</span>
+            <span class="combination-name">Hand</span>
+            <span class="combination-probability">Probability</span>
+            <span class="combination-odds">Odds</span>
+          </div>
+          <div class="combination-row" data-hand-category="8">
+            <span class="combination-rank">1</span>
+            <span class="combination-name">Royal Flush</span>
+            <span class="combination-probability">0.000154%</span>
+            <span class="combination-odds">649,739:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="8">
+            <span class="combination-rank">2</span>
+            <span class="combination-name">Straight Flush</span>
+            <span class="combination-probability">0.00139%</span>
+            <span class="combination-odds">72,192:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="7">
+            <span class="combination-rank">3</span>
+            <span class="combination-name">Four of a Kind</span>
+            <span class="combination-probability">0.0240%</span>
+            <span class="combination-odds">4,164:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="6">
+            <span class="combination-rank">4</span>
+            <span class="combination-name">Full House</span>
+            <span class="combination-probability">0.144%</span>
+            <span class="combination-odds">693:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="5">
+            <span class="combination-rank">5</span>
+            <span class="combination-name">Flush</span>
+            <span class="combination-probability">0.197%</span>
+            <span class="combination-odds">508:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="4">
+            <span class="combination-rank">6</span>
+            <span class="combination-name">Straight</span>
+            <span class="combination-probability">0.392%</span>
+            <span class="combination-odds">254:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="3">
+            <span class="combination-rank">7</span>
+            <span class="combination-name">Three of a Kind</span>
+            <span class="combination-probability">2.11%</span>
+            <span class="combination-odds">46.3:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="2">
+            <span class="combination-rank">8</span>
+            <span class="combination-name">Two Pair</span>
+            <span class="combination-probability">4.75%</span>
+            <span class="combination-odds">20.0:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="1">
+            <span class="combination-rank">9</span>
+            <span class="combination-name">One Pair</span>
+            <span class="combination-probability">42.3%</span>
+            <span class="combination-odds">1.37:1</span>
+          </div>
+          <div class="combination-row" data-hand-category="0">
+            <span class="combination-rank">10</span>
+            <span class="combination-name">High Card</span>
+            <span class="combination-probability">50.1%</span>
+            <span class="combination-odds">1.00:1</span>
+          </div>
+        </div>
+      </section>
+
+
     </main>
 
     <footer class="app-footer">
@@ -157,23 +206,7 @@
       </p>
     </footer>
 
-    <div class="card-modal" id="card-modal" aria-hidden="true" role="dialog" aria-modal="true">
-      <div class="card-modal__backdrop" data-modal-close></div>
-      <div class="card-modal__dialog" role="document">
-        <header class="card-modal__header">
-          <h3 id="card-modal-title">Choose a card</h3>
-          <p id="card-modal-subtitle">Select an available card for this position.</p>
-          <button type="button" class="card-modal__close" data-modal-close aria-label="Close picker">
-            &times;
-          </button>
-        </header>
-        <div class="card-modal__grid" id="card-choice-grid"></div>
-        <div class="card-modal__actions">
-          <button type="button" class="secondary-button" id="card-clear-button">Clear card</button>
-          <button type="button" class="secondary-button" data-modal-close>Cancel</button>
-        </div>
-      </div>
-    </div>
+
 
     <script src="script.js"></script>
   </body>
