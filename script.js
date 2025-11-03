@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   enforceUniqueSelections();
   clearResults();
   setStatus(DEFAULT_STATUS_MESSAGE, false);
+  updatePreviews();
   simulationOutput.textContent = Number(simulationSlider.value).toLocaleString();
 
   simulationSlider.addEventListener('input', () => {
@@ -93,6 +94,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
   opponentInput.addEventListener('input', () => {
     scheduleAutoSimulation();
+  });
+
+  calculateButton.addEventListener('click', async () => {
+    const playerCards = collectCards(playerContainer);
+    if (playerCards.length < 2) {
+      setStatus('Please select both of your hole cards before calculating.', true);
+      return;
+    }
+
+    const communityCards = collectCards(communityContainer);
+    const allSelected = [...playerCards, ...communityCards];
+
+    if (hasDuplicates(allSelected)) {
+      setStatus('Duplicate cards detected. Each card can only appear once.', true);
+      return;
+    }
+
+    const opponents = clamp(parseInt(opponentInput.value, 10) || 1, 1, 5);
+    opponentInput.value = opponents.toString();
+
+    const iterations = parseInt(simulationSlider.value, 10);
+
+    toggleLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    try {
+      const { winRate, tieRate, lossRate } = simulateOdds(
+        playerCards,
+        communityCards,
+        opponents,
+        iterations
+      );
+
+      winDisplay.textContent = formatPercent(winRate);
+      tieDisplay.textContent = formatPercent(tieRate);
+      lossDisplay.textContent = formatPercent(lossRate);
+
+      setStatus(
+        `Simulated ${iterations.toLocaleString()} hands against ${opponents} opponent${
+          opponents > 1 ? 's' : ''
+        }.`,
+        false
+      );
+      updateHandSummary();
+    } catch (error) {
+      console.error(error);
+      setStatus('Something went wrong during the simulation. Please try again.', true);
+    } finally {
+      toggleLoading(false);
+    }
   });
 
   resetButton.addEventListener('click', () => {
@@ -122,6 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
     tieDisplay.textContent = '0%';
     lossDisplay.textContent = '0%';
   }
+    winDisplay.textContent = '0%';
+    tieDisplay.textContent = '0%';
+    lossDisplay.textContent = '0%';
+    setStatus('Provide your cards and press "Calculate" to run a Monte Carlo simulation.', false);
+    updatePreviews();
+  });
 
   function toggleLoading(isLoading) {
     calculateButton.disabled = isLoading;
@@ -150,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       applySelectColor(select);
+      select.addEventListener('change', updatePreviews);
     });
   }
 
@@ -461,6 +519,9 @@ function populateSelectOptions() {
       const isRedSuit = card.suit === 'H' || card.suit === 'D';
       option.dataset.suit = card.suit;
       option.style.color = isRedSuit ? 'var(--card-red)' : 'var(--card-black)';
+    select.appendChild(new Option('Select card', ''));
+    FULL_DECK.forEach((card) => {
+      const option = new Option(card.label, card.code);
       select.appendChild(option);
     });
   });
@@ -559,6 +620,8 @@ function createCardElement(card, label) {
       </div>
       <span class="card-slot-label">${label}</span>
     `;
+    cardEl.innerHTML = `<span class="card-slot-label">${label}</span>`;
+    cardEl.innerHTML = `<span class="card-slot">${label}</span>`;
     return cardEl;
   }
 
@@ -579,6 +642,10 @@ function createCardElement(card, label) {
       <span class="card-rank">${card.rank}</span>
       <span class="card-suit">${suitInfo.symbol}</span>
     </div>
+  cardEl.classList.toggle('card-red', card.suit === 'H' || card.suit === 'D');
+  cardEl.innerHTML = `
+    <span class="card-rank">${card.rank}</span>
+    <span class="card-suit">${suitInfo.symbol}</span>
   `;
 
   return cardEl;
