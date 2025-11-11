@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מחשבון אודס הולדם – קליקים על קלפים</title>
+  <style>
+    :root{
+      --bg:#0b1020;--surface:#141b34;--border:#223063;--text:#eef2ff;--muted:#a5b4fc;--accent:#22c55e;--danger:#ef4444;--warn:#f59e0b;--card:#0f1530;--btn:#0f1530;--shadow:rgba(0,0,0,.25);
+      --spade:#e5e7eb;--club:#d1d5db;--heart:#ff4d4d;--diamond:#ff4d4d;
+    }
+    html[data-theme="light"]{
+      --bg:#f6f7fb;--surface:#ffffff;--border:#d8def1;--text:#0f1226;--muted:#4b5563;--accent:#16a34a;--danger:#dc2626;--warn:#d97706;--card:#f9fafb;--btn:#f3f4f6;--shadow:rgba(0,0,0,.08);
+      --spade:#111827;--club:#0f172a;--heart:#b91c1c;--diamond:#b91c1c;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Heebo,Arial;background:linear-gradient(180deg,var(--bg),#0e1328);color:var(--text)}
+    header{padding:18px;text-align:center}
+    h1{margin:0;font-size:24px}
+    .wrap{max-width:1040px;margin:0 auto;padding:16px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 10px 30px var(--shadow)}
+    .grid{display:grid;gap:12px}
+    @media(min-width:980px){.grid{grid-template-columns:1.1fr 1fr}}
+
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+    .btn{cursor:pointer;border:1px solid var(--border);background:var(--btn);color:var(--text);border-radius:12px;padding:10px 14px;font-weight:600}
+    .btn:active{transform:translateY(1px)}
+
+    .areas{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:720px){.areas{grid-template-columns:1fr 1fr}}
+
+    .slots{display:flex;gap:10px;flex-wrap:wrap}
+    .slot{width:72px;height:96px;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;background:var(--card);font-size:28px;font-weight:800;letter-spacing:1px}
+    .slot.active{outline:2px solid var(--accent)}
+
+    /* Palette */
+    #deckSection h2{margin:0}
+    .palette{display:grid;grid-template-columns:repeat(13,1fr);gap:6px}
+    @media(max-width:640px){.palette{grid-template-columns:repeat(7,1fr)}}
+    .cardBtn{height:44px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px}
+    .cardBtn[disabled]{opacity:.35;cursor:not-allowed}
+    .spade{color:var(--spade)}
+    .club{color:var(--club)}
+    .heart{color:var(--heart)}
+    .diamond{color:var(--diamond)}
+    .rank{margin-inline-end:2px}
+
+    .meter{height:28px;background:var(--card);border:1px solid var(--border);border-radius:999px;overflow:hidden;position:relative}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#22c55e,#16a34a)}
+    .readout{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
+    .pill{padding:4px 10px;border-radius:999px;font-weight:700}
+    .win{background:#0c3b22;color:#8ef0ba}
+    .tie{background:#3a2b06;color:#ffd166}
+    .lose{background:#3b0c12;color:#ff9aa2}
+    html[data-theme="light"] .win{background:#d1fae5;color:#065f46}
+    html[data-theme="light"] .tie{background:#fef3c7;color:#92400e}
+    html[data-theme="light"] .lose{background:#fee2e2;color:#991b1b}
+    small.hint{color:var(--muted)}
+
+    .handText{margin-top:10px;font-weight:700}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>מחשבון אחוזי ניצחון – Texas Hold'em</h1>
+    <div class="toolbar">
+      <div><small class="hint">בחר חריץ ואז לחץ על הקלף. לחיצה על חריץ מנקה אותו.</small></div>
+      <button id="themeBtn" class="btn">מצב כהה/בהיר</button>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <section class="card">
+      <h2>בחר קלפים בלחיצה</h2>
+      <div class="areas">
+        <div>
+          <label><strong>היד שלך</strong></label>
+          <div class="slots" id="heroSlots"></div>
+        </div>
+        <div>
+          <label><strong>הלוח (פלופ / טרן / ריבר)</strong></label>
+          <div class="slots" id="boardSlots"></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <div class="row"><small class="hint">יריבים:</small> <input id="opp" type="number" min="1" max="9" value="1" class="btn" style="width:80px"/></div>
+        <button id="clear" class="btn">נקה הכל</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>תוצאה</h2>
+      <div class="meter"><div class="bar" id="bar"></div></div>
+      <div class="readout">
+        <span class="pill win">ניצחון: <span id="win">0%</span></span>
+        <span class="pill tie">חלוקה: <span id="tie">0%</span></span>
+        <span class="pill lose">הפסד: <span id="lose">0%</span></span>
+      </div>
+      <div class="handText" id="handText">כרגע: —</div>
+      <div id="bestFive" style="margin-top:8px"><small class="hint">5 הקלפים החזקים שלך: —</small></div>
+      <div id="alerts" style="margin-top:8px"><small class="hint">אזהרות דרואו: —</small></div>
+      <div id="outs" style="margin-top:8px"><small class="hint">קלפים מסוכנים (השלמות ליריבים): —</small></div>
+      <div id="riverCombos" style="margin-top:8px; display:none"></div>
+      <div style="margin-top:12px" class="toolbar">
+        <button id="toggleBeat" class="btn">מי חזק ממני?</button>
+      </div>
+      <div id="beatBox" style="display:none; margin-top:8px">
+        <table style="width:100%; border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)"><th style="text-align:right;padding:6px">קטגוריה</th><th style="text-align:right;padding:6px">קומבינציות</th><th style="text-align:right;padding:6px">אחוז מכל האפשרויות</th></tr>
+          </thead>
+          <tbody id="beatTable"></tbody>
+        </table>
+        <small class="hint">הטבלה מחושבת לפי כל זוגות הקלפים האפשריים שנותרו בחפיסה מול הלוח הנוכחי.</small>
+      </div>
+      <div style="margin-top:10px">
+        <small class="hint">החישוב רץ אוטומטית אחרי כל שינוי. קלפים כפולים ננעלים ולא ניתנים לבחירה.</small>
+      </div>
+    </section>
+  </div>
+
+  <section id="deckSection" class="wrap card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <h2 style="margin:0">החפיסה</h2>
+      
+    </div>
+    <div id="palette" class="palette"></div>
+    <div id="deckError" style="margin-top:8px; display:none"><small class="hint">לא הצלחנו לבנות את החפיסה. נסה ללחוץ על "בנה חפיסה מחדש".</small></div>
+  </section>
+
+  <footer class="wrap" style="text-align:center;opacity:.8">נבנה לשימוש אופליין ליד השולחן. ✨</footer>
+
+<script>
+  // Theme toggle
+  const htmlEl = document.documentElement;
+  const saved = localStorage.getItem('theme2');
+  if(saved==='light') htmlEl.setAttribute('data-theme','light');
+  document.getElementById('themeBtn').addEventListener('click',()=>{
+    const now = htmlEl.getAttribute('data-theme')==='light' ? 'dark' : 'light';
+    htmlEl.setAttribute('data-theme', now);
+    localStorage.setItem('theme2', now);
+  });
+
+  // Build slots
+  function makeSlot(){
+    const div=document.createElement('div');
+    div.className='slot';
+    div.addEventListener('click',()=>{
+      const val = div.dataset.card;
+      if(val){ div.innerHTML=''; div.dataset.card=''; enableCard(val,true); compute(); }
+      setActive(div);
+    });
+    return div;
+  }
+  const heroSlots = document.getElementById('heroSlots');
+  const boardSlots = document.getElementById('boardSlots');
+  for(let i=0;i<2;i++) heroSlots.appendChild(makeSlot());
+  for(let i=0;i<5;i++) boardSlots.appendChild(makeSlot());
+  let activeSlot = heroSlots.firstChild; activeSlot.classList.add('active');
+  function setActive(el){ document.querySelectorAll('.slot').forEach(s=>s.classList.remove('active')); el.classList.add('active'); activeSlot=el; }
+
+  // Palette of 52
+  const ranks=['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
+  const suits=['s','h','d','c'];
+  const suitIcon = s=>({s:'♠',h:'♥',d:'♦',c:'♣'}[s]);
+  const suitClass = s=>({s:'spade',h:'heart',d:'diamond',c:'club'}[s]);
+  const palette = document.getElementById('palette');
+  let deckBtns=[];
+  function rebuildDeck(){
+    try{
+      palette.innerHTML=''; deckBtns=[];
+      ranks.forEach(r=>suits.forEach(s=>{
+        const id=r+s; const b=document.createElement('button');
+        b.className='cardBtn '+suitClass(s);
+        const disp=(r==='T')?'10':r;
+        b.innerHTML='<span class="rank">'+disp+'</span><span class="'+suitClass(s)+'">'+suitIcon(s)+'</span>';
+        b.dataset.card=id; b.addEventListener('click',()=>placeCard(id));
+        deckBtns.push(b); palette.appendChild(b);
+      }));
+      document.getElementById('deckError').style.display = deckBtns.length? 'none':'block';
+    }catch(e){ console.error(e); document.getElementById('deckError').style.display='block'; }
+  }
+  
+  // ensure DOM ready before build
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', rebuildDeck); else rebuildDeck();
+
+  function enableCard(id,on){ const btn=deckBtns.find(x=>x.dataset.card===id); if(btn){ btn.disabled=!on; } }
+  function placeCard(id){ if(!activeSlot||isUsed(id)) return; if(activeSlot.dataset.card){ enableCard(activeSlot.dataset.card,true);} activeSlot.innerHTML=labelHTML(id); activeSlot.dataset.card=id; enableCard(id,false); const next=[...document.querySelectorAll('.slot')].find(s=>!s.dataset.card); if(next) setActive(next); compute(); }
+  function isUsed(id){ return [...document.querySelectorAll('.slot')].some(s=>s.dataset.card===id); }
+  function labelHTML(card){ const r=card[0], s=card[1]; const disp=(r==='T')?'10':r; return '<span class="rank">'+disp+'</span><span class="'+suitClass(s)+'">'+suitIcon(s)+'</span>'; }
+
+  // Evaluation helpers
+  const RANK_VAL=Object.fromEntries(ranks.map((r,i)=>[r,i+2]));
+  const VAL_RANK=Object.fromEntries(Object.entries(RANK_VAL).map(([k,v])=>[v,k]));
+  const RANK_NAME=r=>({'A':'אס','K':'מלך','Q':'מלכה','J':'נסיך','T':'10','9':'9','8':'8','7':'7','6':'6','5':'5','4':'4','3':'3','2':'2'})[r];
+  function evaluate7(cards){ let bestVal=null,bestPick=null; for(let a=0;a<3;a++) for(let b=a+1;b<4;b++) for(let c=b+1;c<5;c++) for(let d=c+1;d<6;d++) for(let e=d+1;e<7;e++){ const hand=[cards[a],cards[b],cards[c],cards[d],cards[e]]; const val=evaluate5(hand); if(!bestVal||compareVal(val,bestVal)>0){ bestVal=val; bestPick=hand; } } return {val:bestVal,pick:bestPick}; }
+  function evaluate5(cards){ const ranksA=cards.map(c=>RANK_VAL[c[0]]).sort((a,b)=>b-a); const suitsA=cards.map(c=>c[1]); const counts=new Map(); ranksA.forEach(r=>counts.set(r,(counts.get(r)||0)+1)); const unique=[...counts.entries()].sort((a,b)=> b[1]-a[1] || b[0]-a[0]); const isFlush=suitsA.every(s=>s===suitsA[0]); const straightHigh=getStraightHigh(ranksA); const isStraight=straightHigh>0; if(isFlush&&isStraight){return [8,straightHigh];} if(unique[0][1]===4){ const four=unique[0][0]; const kicker=unique.find(x=>x[0]!==four)[0]; return [7,four,kicker]; } if(unique[0][1]===3 && unique[1][1]===2){ return [6, unique[0][0], unique[1][0]];} if(isFlush){ return [5, ...ranksA]; } if(isStraight){ return [4, straightHigh]; } if(unique[0][1]===3){ const ks=unique.filter(x=>x[1]===1).map(x=>x[0]).sort((a,b)=>b-a); return [3, unique[0][0], ...ks]; } if(unique[0][1]===2 && unique[1][1]===2){ const hi=Math.max(unique[0][0],unique[1][0]); const lo=Math.min(unique[0][0],unique[1][0]); const kicker=unique.find(x=>x[1]===1)[0]; return [2,hi,lo,kicker]; } if(unique[0][1]===2){ const ks=unique.filter(x=>x[1]===1).map(x=>x[0]).sort((a,b)=>b-a); return [1, unique[0][0], ...ks]; } return [0, ...ranksA]; }
+  function getStraightHigh(ranksA){ const r=[...new Set(ranksA)]; if(r[0]===14) r.push(1); let run=1,best=0; for(let i=0;i<r.length-1;i++){ if(r[i]-1===r[i+1]){ run++; if(run>=5) best=r[i-3]; } else run=1; } return best; }
+  function compareVal(a,b){ for(let i=0;i<Math.max(a.length,b.length);i++){ const av=a[i]||0,bv=b[i]||0; if(av!==bv) return av-bv; } return 0; }
+
+  function describeMadeHand(hero,boardKnown){ const known=[...hero.filter(Boolean),...boardKnown.filter(Boolean)]; if(known.length===0) return '—'; let best=null; if(known.length>=5){ for(let a=0;a<known.length-4;a++) for(let b=a+1;b<known.length-3;b++) for(let c=b+1;c<known.length-2;c++) for(let d=c+1;d<known.length-1;d++) for(let e=d+1;e<known.length;e++){ const v=evaluate5([known[a],known[b],known[c],known[d],known[e]]); if(!best||compareVal(v,best)>0) best=v; } } else { const counts={}; known.forEach(c=>{const r=c[0]; counts[r]=(counts[r]||0)+1;}); const entries=Object.entries(counts).sort((a,b)=> RANK_VAL[b[0]]-RANK_VAL[a[0]]); if(entries.some(([,n])=>n===4)) return 'רביעייה '+RANK_NAME(entries.find(([,n])=>n===4)[0]); if(entries.some(([,n])=>n===3)) return 'שלישייה '+RANK_NAME(entries.find(([,n])=>n===3)[0]); const pairs=entries.filter(([,n])=>n===2).map(([r])=>r); if(pairs.length>=2) return 'שני זוגות '+RANK_NAME(pairs[0])+' ו'+RANK_NAME(pairs[1]); if(pairs.length===1) return 'זוג '+RANK_NAME(pairs[0]); const hi=known.map(c=>RANK_VAL[c[0]]).sort((a,b)=>b-a)[0]; return 'קלף גבוה '+RANK_NAME(VAL_RANK[hi]); } const type=best[0],v=best; const rName=v=>RANK_NAME(VAL_RANK[v]); switch(type){ case 8:return 'סטרייט פלאש עד '+rName(v[1]); case 7:return 'רביעייה '+rName(v[1]); case 6:return 'פול האוס: שלישייה '+rName(v[1])+' וזוג '+rName(v[2]); case 5:return 'צבע (חמישה מאותה צורה)'; case 4:return 'רצף עד '+rName(v[1]); case 3:return 'שלישייה '+rName(v[1]); case 2:return 'שני זוגות '+rName(v[1])+' ו'+rName(v[2]); case 1:return 'זוג '+rName(v[1]); default:return 'קלף גבוה '+rName(v[1]); } }
+
+  // Equity + danger
+  function makeDeck(){ const d=[]; ranks.forEach(r=>suits.forEach(s=>d.push(r+s))); return d; }
+  function simulateEquity(hero,board,numOpp,iters=6000){ if(hero.length!==2||!hero[0]||!hero[1]) return {win:0,tie:0,lose:0}; const deck=makeDeck(); const used=new Set([...hero,...board.filter(Boolean)]); const avail=deck.filter(c=>!used.has(c)); let win=0,tie=0,lose=0; const boardKnown=board.filter(Boolean); for(let i=0;i<iters;i++){ for(let j=avail.length-1;j>0;j--){ const k=(Math.random()*(j+1))|0; [avail[j],avail[k]]=[avail[k],avail[j]]; } let ptr=0; const oppHands=[]; for(let o=0;o<numOpp;o++){ oppHands.push([avail[ptr++],avail[ptr++]]);} const need=5-boardKnown.length; const runBoard=[...boardKnown, ...avail.slice(ptr, ptr+need)]; const heroEval=evaluate7([...hero, ...runBoard]); let better=0,equal=0; for(let o=0;o<numOpp;o++){ const ob=evaluate7([...oppHands[o], ...runBoard]); const cmp=compareVal(heroEval.val,ob.val); if(cmp<0) better++; else if(cmp===0) equal++; } if(better===0&&equal===0) win++; else if(better===0&&equal>0) tie++; else lose++; } const total=win+tie+lose||1; return {win:win/total,tie:tie/total,lose:lose/total}; }
+
+  function dangerAlerts(board){ const out=[]; if(board.length<3) return out; if(board.length===5) return out; const suitCount={s:0,h:0,d:0,c:0}; board.forEach(c=>suitCount[c[1]]++); const maxSuit=Object.entries(suitCount).sort((a,b)=>b[1]-a[1])[0]; if(board.length===3&&maxSuit[1]===2) out.push('אפשרות לדרואו לצבע ('+suitIcon(maxSuit[0])+')'); if(board.length>=4&&maxSuit[1]===3) out.push('צבע קרוב – כל '+suitIcon(maxSuit[0])+' נוסף משלים'); const vals=[...new Set(board.map(c=>RANK_VAL[c[0]]))].sort((a,b)=>a-b); function hasOESD(){ for(let i=0;i<vals.length;i++){ const w=[vals[i],vals[i]+1,vals[i]+2,vals[i]+3]; const cnt=w.filter(x=>vals.includes(x)||(x===5&&vals.includes(14))).length; if(cnt>=4) return true; } return false; } function hasGutshot(){ for(let i=0;i<vals.length-2;i++){ const a=vals[i],b=vals[i+1],c=vals[i+2]; if(c-a<=4 && new Set([a,b,c]).size>=3) return true; } return false; } if(hasOESD()) out.push('רצף פתוח זמין'); else if(hasGutshot()) out.push('גט־שוט לרצף קיים'); const counts={}; board.forEach(c=>{const r=c[0]; counts[r]=(counts[r]||0)+1;}); const pairs=Object.values(counts).filter(n=>n>=2).length; if(pairs>=1) out.push('לוח זוגי – פול האוס/רביעייה אפשרי'); return out; }
+
+  function findDangerNextCards(hero, board){
+  const base = '<small class="hint">קלפים מסוכנים (השלמות ליריבים): </small>';
+  if(!(hero[0]&&hero[1]) || board.length < 3) return { text: base + '—' };
+  if(board.length === 5) return { text: base + '—' }; // בריבר אין קלף הבא
+
+  const deck  = makeDeck();
+  const used  = new Set([...hero, ...board]);
+  const avail = deck.filter(c => !used.has(c));
+
+  const stage = (board.length === 4) ? 'river' : 'turn';
+  const danger = [];
+  for(let x=0; x<avail.length; x++){
+    const card     = avail[x];
+    const newBoard = [...board, card];
+    const heroVal  = evaluate7([...hero, ...newBoard]).val;
+
+    // אחרי שהוספנו את הקלף הזה, נבדוק מהי היד החזקה ביותר שיריב יכול להחזיק
+    const left = avail.filter((_, i) => i !== x);
+    let bestOpp = null;
+    for(let i=0; i<left.length; i++){
+      for(let j=i+1; j<left.length; j++){
+        const oppVal = evaluate7([left[i], left[j], ...newBoard]).val;
+        if(!bestOpp || compareVal(oppVal, bestOpp) > 0){ bestOpp = oppVal; }
+      }
+    }
+    if(bestOpp && compareVal(heroVal, bestOpp) < 0){
+      danger.push(card);
+    }
+  }
+  if(danger.length === 0) return { text: base + '—' };
+  const label = (stage === 'river') ? 'ריברים שמסכנים אותך: ' : 'טרנים שמסכנים אותך: ';
+  return { text: base + label + danger.map(cardHTML).join(' ') };
+}
+
+  function handLabel(val){ const type=val[0],v=val; const rName=x=>({2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'נסיך',12:'מלכה',13:'מלך',14:'אס'})[x]; switch(type){ case 8:return 'סטרייט פלאש עד '+rName(v[1]); case 7:return 'רביעייה '+rName(v[1]); case 6:return 'פול האוס '+rName(v[1])+' מעל '+rName(v[2]); case 5:return 'צבע'; case 4:return 'רצף עד '+rName(v[1]); case 3:return 'שלישייה '+rName(v[1]); case 2:return 'שני זוגות '+rName(v[1])+' ו'+rName(v[2]); case 1:return 'זוג '+rName(v[1]); default:return 'קלף גבוה '+rName(v[1]); } }
+
+  function populateBeatTable(hero,board){ const tbody=document.getElementById('beatTable'); if(!(hero[0]&&hero[1])){ tbody.innerHTML=''; return;} const deck=makeDeck(); const used=new Set([...hero,...board]); const avail=deck.filter(c=>!used.has(c)); if(board.length<3){ tbody.innerHTML=''; return;} const heroEval=evaluate7([...hero,...board]); const totalComb=(avail.length*(avail.length-1))/2; const buckets=new Map(); for(let i=0;i<avail.length;i++){ for(let j=i+1;j<avail.length;j++){ const opp=[avail[i],avail[j]]; const oppEval=evaluate7([...opp,...board]); if(compareVal(heroEval.val,oppEval.val)<0){ const label=handLabel(oppEval.val); buckets.set(label,(buckets.get(label)||0)+1); } } } const rows=[...buckets.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,count])=>{ const pct=((count/totalComb)*100).toFixed(1)+'%'; return `<tr><td style="padding:6px">${label}</td><td style="padding:6px">${count}</td><td style="padding:6px">${pct}</td></tr>`; }).join(''); tbody.innerHTML=rows || '<tr><td colspan="3" style="padding:6px">אין קומבינציות חזקות ממך כרגע</td></tr>'; }
+
+  function cardHTML(id){ const s=id[1]; const r=id[0]; const disp=(r==='T')?'10':r; return '<span class="rank">'+disp+'</span><span class="'+({s:'spade',h:'heart',d:'diamond',c:'club'}[s])+'">'+({s:'♠',h:'♥',d:'♦',c:'♣'}[s])+'</span>'; }
+  function formatCards(arr){ return arr.map(cardHTML).join(' '); }
+
+  // Wire inputs
+  document.getElementById('clear').addEventListener('click',()=>{ document.querySelectorAll('.slot').forEach(s=>{ if(s.dataset.card){ enableCard(s.dataset.card,true); s.dataset.card=''; s.innerHTML=''; } }); setActive(heroSlots.firstChild); compute(); });
+  document.getElementById('toggleBeat').addEventListener('click',()=>{ const box=document.getElementById('beatBox'); box.style.display=box.style.display==='none'?'block':'none'; });
+  document.getElementById('opp').addEventListener('input', compute);
+
+  // Compute
+  function readState(){ const hero=[...heroSlots.children].map(x=>x.dataset.card).slice(0,2); const board=[...boardSlots.children].map(x=>x.dataset.card).slice(0,5); const numOpp=Math.max(1,Math.min(9,parseInt(document.getElementById('opp').value||'1'))); return {hero,board,numOpp}; }
+  function compute(){ const {hero,board,numOpp}=readState(); const sim=simulateEquity(hero,board,numOpp,6000); const {win,tie,lose}=sim; const pct=x=>(x*100).toFixed(1)+'%'; document.getElementById('win').textContent=pct(win); document.getElementById('tie').textContent=pct(tie); document.getElementById('lose').textContent=pct(lose); document.getElementById('bar').style.width=(win*100)+'%'; const knownBoard=board.filter(Boolean); document.getElementById('handText').textContent='כרגע: '+describeMadeHand(hero,knownBoard); const bestDiv=document.getElementById('bestFive'); if((hero.filter(Boolean).length+knownBoard.length)>=5){ const pool=[...hero.filter(Boolean),...knownBoard]; let best=null,bestPick=null; for(let a=0;a<pool.length-4;a++) for(let b=a+1;b<pool.length-3;b++) for(let c=b+1;c<pool.length-2;c++) for(let d=c+1;d<pool.length-1;d++) for(let e=d+1;e<pool.length;e++){ const subset=[pool[a],pool[b],pool[c],pool[d],pool[e]]; const val=evaluate5(subset); if(!best||compareVal(val,best)>0){ best=val; bestPick=subset; } } bestDiv.innerHTML='<small class="hint">5 הקלפים החזקים שלך: </small>'+formatCards(bestPick); } else { bestDiv.innerHTML='<small class="hint">5 הקלפים החזקים שלך: —</small>'; } const alerts=dangerAlerts(knownBoard); document.getElementById('alerts').innerHTML = alerts.length? ('<small class="hint">אזהרות דרואו:</small> '+alerts.join(' · ')) : '<small class="hint">אזהרות דרואו: —</small>'; const outsList=findDangerNextCards(hero,knownBoard); document.getElementById('outs').innerHTML=outsList.text; populateBeatTable(hero,knownBoard);
+    populateRiverCombos(hero, knownBoard); }
+  compute();
+  // === River: enumerate exact opponent hole-card combos that beat hero ===
+  function populateRiverCombos(hero, board){
+    const box = document.getElementById('riverCombos');
+    if(!box) return;
+    if(!(hero[0]&&hero[1]) || board.length!==5){ box.style.display='none'; box.innerHTML=''; return; }
+    const deck = makeDeck();
+    const used = new Set([...hero, ...board]);
+    const avail = deck.filter(c=>!used.has(c));
+    const heroEval = evaluate7([...hero, ...board]).val;
+    const winners = [];
+    for(let i=0;i<avail.length;i++){
+      for(let j=i+1;j<avail.length;j++){
+        const opp=[avail[i],avail[j]];
+        const oppEval = evaluate7([...opp, ...board]).val;
+        if(compareVal(heroEval, oppEval) < 0){ winners.push(opp); }
+      }
+    }
+    box.style.display='block';
+    if(winners.length===0){ box.innerHTML='<small class="hint">בריבר: אין שום יד שנשארה שיכולה לעקוף אותך.</small>'; return; }
+    const maxShow=80;
+    const shown = winners.slice(0,maxShow).map(p=>`<span class="pill" style="display:inline-block;margin:2px 4px">${cardHTML(p[0])} ${cardHTML(p[1])}</span>`).join('');
+    const more  = winners.length>maxShow ? ` ועוד ${winners.length-maxShow} קומבינציות...` : '';
+    box.innerHTML = `<small class="hint">בריבר: כדי לנצח אותך, ליריב צריך </small><strong>${winners.length}</strong><small class="hint"> קומבינציות אפשריות:</small><div style="margin-top:6px">${shown}${more}</div>`;
+  }
+
+</script>
+</body>
+</html>
