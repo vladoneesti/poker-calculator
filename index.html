@@ -72,6 +72,8 @@
           <output id="simulation-output" for="simulation-count">5,000</output>
         </div>
 
+        <button id="save-hand-button" class="secondary-button">Save Hand</button>
+        <button id="view-history-button" class="secondary-button">View History</button>
         <button id="reset-button" class="primary-button">Reset All</button>
       </section>
 
@@ -198,6 +200,22 @@
 
 
     </main>
+
+    <!-- Hand History Modal -->
+    <div class="history-modal-overlay" id="history-modal">
+      <div class="history-modal-content">
+        <div class="history-modal-header">
+          <h2>Hand History</h2>
+          <button class="history-modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="history-modal-body" id="history-modal-body">
+          <p class="helper-text">No saved hands yet. Save your current hand to see it here.</p>
+        </div>
+        <div class="history-modal-footer">
+          <button id="clear-history-button" class="secondary-button">Clear All History</button>
+        </div>
+      </div>
+    </div>
 
     <footer class="app-footer">
       <p>
