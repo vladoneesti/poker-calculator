@@ -1,4 +1,5 @@
 # Poker Odds Calculator
+Wanna see how it looks like? Go to <a href="https://casinoharbor.eu/">casinoharbor.eu</a>
 
 A responsive Texas Hold'em odds calculator that estimates your winning, tying, and losing
 probabilities using Monte Carlo simulation. The interface is designed for both desktop and
